@@ -1,6 +1,8 @@
 package com.example.restapi;
 
+import com.example.restapi.domain.member.member.entity.Member;
 import com.example.restapi.domain.member.member.service.AuthTokenService;
+import com.example.restapi.domain.member.member.service.MemberService;
 import com.example.restapi.standard.util.Utils;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class AuthTokenServiceTest {
     @Autowired
     private AuthTokenService authTokenService;
+    @Autowired
+    private MemberService memberService;
+
     @Test
     @DisplayName("AuthTokenService 생성")
     void init() {
@@ -36,6 +41,16 @@ public class AuthTokenServiceTest {
         String jwt = Utils.Jwt.createToken(secretKey, expireSeconds, Map.of("name", "john", "age", 23));
         assertThat(jwt).isNotBlank();
         System.out.println("jwt = " + jwt);
+    }
+
+    @Test
+    @DisplayName("access token 생성")
+    void accessToken() {
+        // jwt -> access token jwt
+        Member member = memberService.findByUsername("user1").get();
+        String accessToken = authTokenService.genAccessToken(member);
+        assertThat(accessToken).isNotBlank();
+        System.out.println("accessToken = " + accessToken);
     }
 
 }
