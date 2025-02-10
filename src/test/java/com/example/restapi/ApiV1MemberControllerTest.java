@@ -250,9 +250,9 @@ public class ApiV1MemberControllerTest {
     @DisplayName("내 정보 조회")
     void me1() throws Exception {
 
-        String apiKey = "user1";
+        String token = "eyJhbGciOiJIUzUxMiJ9.eyJpZCI6MywidXNlcm5hbWUiOiJ1c2VyMSIsImlhdCI6MTczOTE1NDkxNiwiZXhwIjoxNzcwNjkwOTE2fQ.sA4AOT019DdVc2eb0rKSDH9iy64mYE2Lk6IUjC6WJOTpAErxm7rlXOsHidUbfH3sYWfMH2PbcykGFxV3w8Xrfg";
 
-        ResultActions resultActions = meRequest(apiKey);
+        ResultActions resultActions = meRequest(token);
 
         resultActions
                 .andExpect(status().isOk())
@@ -261,7 +261,7 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.code").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."));
 
-        Member member = memberService.findByApiKey(apiKey).get();
+        Member member = memberService.getMemberByAccessToken(token).get();
         checkMember(resultActions, member);
 
     }

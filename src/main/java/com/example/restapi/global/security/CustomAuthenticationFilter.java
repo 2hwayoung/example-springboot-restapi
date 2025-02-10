@@ -30,12 +30,17 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String apiKey = authorizationHeader.substring("Bearer ".length());
-        Optional<Member> opMember = memberService.findByApiKey(apiKey);
+        String accessToken = authorizationHeader.substring("Bearer ".length());
+
+//        Optional<Member> opMember = memberService.findByApiKey(apiKey);
+
+        Optional<Member> opMember = memberService.getMemberByAccessToken(accessToken);
+
         if (opMember.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
         }
+
         Member actor = opMember.get();
         rq.setLogin(actor.getUsername());
 
