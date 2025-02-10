@@ -1,10 +1,12 @@
 package com.example.restapi.domain.member.member.entity;
 
+import com.example.restapi.global.entity.BaseEntity;
 import com.example.restapi.global.entity.BaseTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
@@ -12,7 +14,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@SuperBuilder
 @EntityListeners(AuditingEntityListener.class)
 public class Member extends BaseTime {
 

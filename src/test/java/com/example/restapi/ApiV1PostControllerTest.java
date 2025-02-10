@@ -48,12 +48,12 @@ public class ApiV1PostControllerTest {
     @Autowired
     private MemberService memberService;
 
-    private Member loginMember;
+    private Member loginedMember;
     private String authToken;
     @BeforeEach
     void login() {
-        loginMember = memberService.findByUsername("user1").get();
-        authToken = memberService.getAuthToken(loginMember);
+        loginedMember = memberService.findByUsername("user1").get();
+        authToken = memberService.getAuthToken(loginedMember);
     }
 
     private void checkPosts(ResultActions resultActions, List<Post> posts) throws Exception {

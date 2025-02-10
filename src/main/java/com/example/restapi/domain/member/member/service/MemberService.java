@@ -55,6 +55,11 @@ public class MemberService {
         }
 
         long id = (long)payload.get("id");
-        return this.findById(id);
+        String username = (String)payload.get("username");
+
+        return Optional.of(Member.builder()
+                .id(id)
+                .username(username)
+                .build());
     }
 }

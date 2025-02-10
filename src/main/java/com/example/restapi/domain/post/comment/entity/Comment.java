@@ -11,12 +11,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-@Builder
+@SuperBuilder
 public class Comment extends BaseTime {
 
     @ManyToOne(fetch = FetchType.LAZY)

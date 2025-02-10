@@ -37,13 +37,13 @@ public class ApiV1MemberControllerTest {
     @Autowired
     private MemberService memberService;
 
-    private Member loginMember;
+    private Member loginedMember;
     private String authToken;
 
     @BeforeEach
     void login() {
-        loginMember = memberService.findByUsername("user1").get();
-        authToken = memberService.getAuthToken(loginMember);
+        loginedMember = memberService.findByUsername("user1").get();
+        authToken = memberService.getAuthToken(loginedMember);
     }
 
     private void checkMember(ResultActions resultActions, Member member) throws Exception {
@@ -268,8 +268,7 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.code").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."));
 
-        Member member = memberService.getMemberByAccessToken(authToken).get();
-        checkMember(resultActions, member);
+        checkMember(resultActions, loginedMember);
 
     }
 
