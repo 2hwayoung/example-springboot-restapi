@@ -27,8 +27,10 @@ public class AuthTokenService {
     }
 
     Map<String, Object> getPayload(String token) {
+        if(!Utils.Jwt.isTokenValid(keyString, token)) {
+            return null;
+        }
         Map<String, Object> payload = Utils.Jwt.getPayload(keyString, token);
-        if(payload == null) return null;
 
         Number idNo = (Number)payload.get("id");
         long id = idNo.longValue();

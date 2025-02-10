@@ -3,6 +3,7 @@ package com.example.restapi;
 import com.example.restapi.domain.member.member.controller.ApiV1MemberController;
 import com.example.restapi.domain.member.member.entity.Member;
 import com.example.restapi.domain.member.member.service.MemberService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,14 @@ public class ApiV1MemberControllerTest {
     @Autowired
     private MemberService memberService;
 
+    private Member loginMember;
+    private String authToken;
+
+    @BeforeEach
+    void login() {
+        loginMember = memberService.findByUsername("user1").get();
+        authToken = memberService.getAuthToken(loginMember);
+    }
 
     private void checkMember(ResultActions resultActions, Member member) throws Exception {
         resultActions
@@ -160,8 +169,8 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.data").exists())
                 .andExpect(jsonPath("$.data.item.id").value(member.getId()))
                 .andExpect(jsonPath("$.data.item.nickname").value(member.getNickname()))
-                .andExpect(jsonPath("$.data.item.createdDate").value(member.getCreatedDate().toString()))
-                .andExpect(jsonPath("$.data.item.modifiedDate").value(member.getModifiedDate().toString()))
+                .andExpect(jsonPath("$.data.item.createdDate").value(matchesPattern(member.getCreatedDate().toString().replaceAll("0+$", "") + ".*")))
+                .andExpect(jsonPath("$.data.item.modifiedDate").value(matchesPattern(member.getModifiedDate().toString().replaceAll("0+$", "") + ".*")))
                 .andExpect(jsonPath("$.data.apiKey").value(member.getApiKey()))
                 .andExpect(jsonPath("$.data.accessToken").isString());
 
@@ -236,11 +245,11 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("password : NotBlank : must not be blank"));
     }
 
-    private ResultActions meRequest(String apiKey) throws Exception {
+    private ResultActions meRequest(String authToken) throws Exception {
         return mvc
                 .perform(
                         get("/api/v1/members/me")
-                                .header("Authorization", "Bearer " + apiKey)
+                                .header("Authorization", "Bearer " + authToken)
 
                 )
                 .andDo(print());
@@ -250,9 +259,7 @@ public class ApiV1MemberControllerTest {
     @DisplayName("내 정보 조회")
     void me1() throws Exception {
 
-        String token = "eyJhbGciOiJIUzUxMiJ9.eyJpZCI6MywidXNlcm5hbWUiOiJ1c2VyMSIsImlhdCI6MTczOTE1NDkxNiwiZXhwIjoxNzcwNjkwOTE2fQ.sA4AOT019DdVc2eb0rKSDH9iy64mYE2Lk6IUjC6WJOTpAErxm7rlXOsHidUbfH3sYWfMH2PbcykGFxV3w8Xrfg";
-
-        ResultActions resultActions = meRequest(token);
+        ResultActions resultActions = meRequest(authToken);
 
         resultActions
                 .andExpect(status().isOk())
@@ -261,7 +268,7 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.code").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."));
 
-        Member member = memberService.getMemberByAccessToken(token).get();
+        Member member = memberService.getMemberByAccessToken(authToken).get();
         checkMember(resultActions, member);
 
     }
@@ -270,9 +277,7 @@ public class ApiV1MemberControllerTest {
     @DisplayName("내 정보 조회 - 실패 - 잘못된 api key")
     void me2() throws Exception {
 
-        String apiKey = "";
-
-        ResultActions resultActions = meRequest(apiKey);
+        ResultActions resultActions = meRequest("");
 
         resultActions
                 .andExpect(status().isUnauthorized())

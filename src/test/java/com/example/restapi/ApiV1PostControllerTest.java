@@ -6,6 +6,7 @@ import com.example.restapi.domain.post.post.controller.ApiV1PostController;
 import com.example.restapi.domain.post.post.entity.Post;
 import com.example.restapi.domain.post.post.service.PostService;
 import com.example.restapi.global.security.SecurityConfig;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,14 @@ public class ApiV1PostControllerTest {
 
     @Autowired
     private MemberService memberService;
+
+    private Member loginMember;
+    private String authToken;
+    @BeforeEach
+    void login() {
+        loginMember = memberService.findByUsername("user1").get();
+        authToken = memberService.getAuthToken(loginMember);
+    }
 
     private void checkPosts(ResultActions resultActions, List<Post> posts) throws Exception {
         for(int i = 0; i < posts.size(); i++) {
@@ -161,11 +170,10 @@ public class ApiV1PostControllerTest {
         int pageSize = 3;
         String keywordType = "";
         String keyword = "";
-        String apiKey = "user1";
 
         ResultActions resultActions = mvc
                 .perform(get("/api/v1/posts/mine")
-                        .header("Authorization", "Bearer " + apiKey)
+                        .header("Authorization", "Bearer " + authToken)
                         .param("page", String.valueOf(page))
                         .param("pageSize", String.valueOf(pageSize))
                         .param("keywordType", keywordType)
@@ -183,7 +191,7 @@ public class ApiV1PostControllerTest {
                 .andExpect(jsonPath("$.data.totalPages").value(2))
                 .andExpect(jsonPath("$.data.totalItems").value(5));
 
-        Member author = memberService.findByApiKey(apiKey).get();
+        Member author = memberService.getMemberByAccessToken(authToken).get();
         Page<Post> postPage = postService.getMyItems(author, page, pageSize, keywordType, keyword);
         List<Post> posts = postPage.getContent();
         checkPosts(resultActions, posts);
@@ -203,10 +211,10 @@ public class ApiV1PostControllerTest {
                 .andExpect(jsonPath("$.data.modifiedDate").value(matchesPattern(post.getModifiedDate().toString().replaceAll("0+$", "") + ".*")));
     }
 
-    private ResultActions itemRequest(long postId, String apiKey) throws Exception {
+    private ResultActions itemRequest(long postId, String authToken) throws Exception {
         return mvc
                 .perform(get("/api/v1/posts/%d".formatted(postId))
-                        .header("Authorization", "Bearer " + apiKey))
+                        .header("Authorization", "Bearer " + authToken))
                 .andDo(print());
     }
 
@@ -232,9 +240,12 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 단건 조회 2 - 다른 유저의 비공개글 조회")
     void item2() throws Exception {
        long postId = 3;
-        ResultActions resultActions = itemRequest(postId, "user2");
+       Member otherMember = memberService.findByUsername("user2").get();
+       String otherToken = memberService.getAuthToken(otherMember);
 
-        resultActions
+       ResultActions resultActions = itemRequest(postId, otherToken);
+
+       resultActions
                 .andExpect(status().isForbidden())
                 .andExpect(handler().handlerType(ApiV1PostController.class))
                 .andExpect(handler().methodName("getItem"))
@@ -246,7 +257,7 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 단건 조회 3 - 존재하지 않는 글 조회")
     void item3() throws Exception {
        long postId = -1;
-        ResultActions resultActions = itemRequest(postId, "user1");
+        ResultActions resultActions = itemRequest(postId, authToken);
 
         resultActions
                 .andExpect(status().isNotFound())
@@ -256,10 +267,10 @@ public class ApiV1PostControllerTest {
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 글입니다."));
     }
 
-    private ResultActions writeRequest(String apiKey, String title, String content) throws Exception {
+    private ResultActions writeRequest(String token, String title, String content) throws Exception {
         return mvc
                 .perform(post("/api/v1/posts")
-                        .header("Authorization", "Bearer "+apiKey)
+                        .header("Authorization", "Bearer "+token)
                         .content("""
                                 {
                                     "title": "%s",
@@ -280,7 +291,7 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 작성")
     void write1() throws Exception {
 
-        ResultActions resultActions = writeRequest("user3", "새로운 글 제목", "새로운 글 내용");
+        ResultActions resultActions = writeRequest(authToken, "새로운 글 제목", "새로운 글 내용");
 
         Post post = postService.getLatestItem().orElseThrow();
 
@@ -298,7 +309,7 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 작성2 - no apiKey")
     void write2() throws Exception {
 
-        ResultActions resultActions = writeRequest("wrong or no apiKey", "새로운 글 제목", "새로운 글 내용");
+        ResultActions resultActions = writeRequest("WRONG_ACCESS_TOKEN", "새로운 글 제목", "새로운 글 내용");
 
         resultActions
                 .andExpect(status().isUnauthorized())
@@ -312,7 +323,7 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 작성3 - no input data")
     void write3() throws Exception {
 
-        ResultActions resultActions = writeRequest("user1", "", "");
+        ResultActions resultActions = writeRequest(authToken, "", "");
 
         resultActions
                 .andExpect(status().isBadRequest())
@@ -325,10 +336,11 @@ public class ApiV1PostControllerTest {
                         """.trim().stripIndent()));
     }
 
-    private ResultActions modifyRequest(String apiKey, long postId, String title, String content) throws Exception {
+    private ResultActions modifyRequest(String authToken, long postId, String title, String content) throws Exception {
         return mvc
                 .perform(put("/api/v1/posts/%d".formatted(postId))
-                        .header("Authorization", "Bearer "+apiKey)
+                        .header("Authorization", "Bearer "+authToken
+                        )
                         .content("""
                                 {
                                     "title": "%s",
@@ -349,7 +361,7 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 수정1")
     void modify1() throws Exception {
         long postId = 1;
-        ResultActions resultActions = modifyRequest("user1", postId, "(모집마감)축구 하실분 모집합니다", "모집이 마감되었습니다.");
+        ResultActions resultActions = modifyRequest(authToken, postId, "(모집마감)축구 하실분 모집합니다", "모집이 마감되었습니다.");
 
         resultActions
                 .andExpect(status().isOk())
@@ -366,7 +378,7 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 수정2 - no apiKey")
     void modify2() throws Exception {
         long postId = 1;
-        ResultActions resultActions = modifyRequest("wrong author", postId, "(모집마감)축구 하실분 모집합니다", "모집이 마감되었습니다.");
+        ResultActions resultActions = modifyRequest("WRONG_ACCESS_TOKEN", postId, "(모집마감)축구 하실분 모집합니다", "모집이 마감되었습니다.");
 
         resultActions
                 .andExpect(status().isUnauthorized())
@@ -380,7 +392,7 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 수정3 - no input data")
     void modify3() throws Exception {
         long postId = 1;
-        ResultActions resultActions = modifyRequest("user1", postId, "", "");
+        ResultActions resultActions = modifyRequest(authToken, postId, "", "");
 
         resultActions
                 .andExpect(status().isBadRequest())
@@ -396,8 +408,8 @@ public class ApiV1PostControllerTest {
     @Test
     @DisplayName("글 수정4 - no permission")
     void modify4() throws Exception {
-        long postId = 1;
-        ResultActions resultActions = modifyRequest("user2", postId, "(모집마감)축구 하실분 모집합니다", "모집이 마감되었습니다.");
+        long postId = 6;
+        ResultActions resultActions = modifyRequest(authToken, postId, "(모집마감)축구 하실분 모집합니다", "모집이 마감되었습니다.");
 
         resultActions
                 .andExpect(status().isForbidden())
@@ -408,10 +420,10 @@ public class ApiV1PostControllerTest {
     }
 
 
-    private ResultActions deleteRequest(String apiKey, long postId) throws Exception {
+    private ResultActions deleteRequest(String authToken, long postId) throws Exception {
         return mvc
                 .perform(delete("/api/v1/posts/%d".formatted(postId))
-                        .header("Authorization", "Bearer "+apiKey))
+                        .header("Authorization", "Bearer "+authToken))
                 .andDo(print());
     }
 
@@ -419,7 +431,7 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 삭제1")
     void delete1() throws Exception {
         long postId = 1;
-        ResultActions resultActions = deleteRequest("user1", postId);
+        ResultActions resultActions = deleteRequest(authToken, postId);
 
         resultActions
                 .andExpect(status().isOk())
@@ -432,7 +444,7 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 삭제2 - no apiKey")
     void delete2() throws Exception {
         long postId = 1;
-        ResultActions resultActions = deleteRequest("wrong author", postId);
+        ResultActions resultActions = deleteRequest("WRONG_ACCESS_TOKEN", postId);
         resultActions
                 .andExpect(status().isUnauthorized())
 //                .andExpect(handler().handlerType(ApiV1PostController.class))
@@ -444,8 +456,8 @@ public class ApiV1PostControllerTest {
     @Test
     @DisplayName("글 삭제3 - no permission")
     void delete3() throws Exception {
-        long postId = 1;
-        ResultActions resultActions = deleteRequest("user2", postId);
+        long postId = 6;
+        ResultActions resultActions = deleteRequest(authToken, postId);
         resultActions
                 .andExpect(status().isForbidden())
                 .andExpect(handler().handlerType(ApiV1PostController.class))
@@ -458,7 +470,10 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 삭제4 - admin")
     void delete4() throws Exception {
         long postId = 1;
-        ResultActions resultActions = deleteRequest("admin", postId);
+        Member admin = memberService.findByUsername("admin").get();
+        String adminToken = memberService.getAuthToken(admin);
+
+        ResultActions resultActions = deleteRequest(adminToken, postId);
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(handler().handlerType(ApiV1PostController.class))

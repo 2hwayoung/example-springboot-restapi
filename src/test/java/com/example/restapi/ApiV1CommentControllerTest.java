@@ -1,9 +1,12 @@
 package com.example.restapi;
 
+import com.example.restapi.domain.member.member.entity.Member;
+import com.example.restapi.domain.member.member.service.MemberService;
 import com.example.restapi.domain.post.comment.controller.ApiV1CommentController;
 import com.example.restapi.domain.post.comment.entity.Comment;
 import com.example.restapi.domain.post.post.entity.Post;
 import com.example.restapi.domain.post.post.service.PostService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,15 +35,26 @@ public class ApiV1CommentControllerTest {
     @Autowired
     private PostService postService;
 
+    @Autowired
+    private MemberService memberService;
+
+    private Member loginMember;
+    private String authToken;
+
+    @BeforeEach
+    void login() {
+        loginMember = memberService.findByUsername("user1").get();
+        authToken = memberService.getAuthToken(loginMember);
+    }
+
     @Test
     @DisplayName("댓글 작성")
     void write() throws Exception {
         long postId = 1;
-        String apiKey = "user1";
         String content = "댓글 내용";
 
         ResultActions resultActions = mvc.perform(post("/api/v1/posts/%d/comments".formatted(postId))
-                        .header("Authorization", "Bearer " + apiKey)
+                        .header("Authorization", "Bearer " + authToken)
                         .content("""
                             {
                                 "content": "%s"
@@ -69,11 +83,10 @@ public class ApiV1CommentControllerTest {
     void modify() throws Exception {
         long postId = 1;
         long commentId = 1;
-        String apiKey = "user1";
         String content = "저 참석하지 않겠습니다."; // oldContent: 저 참석하겠습니다
 
         ResultActions resultActions = mvc.perform(put("/api/v1/posts/%d/comments/%d".formatted(postId, commentId))
-                        .header("Authorization", "Bearer " + apiKey)
+                        .header("Authorization", "Bearer " + authToken)
                         .content("""
                             {
                                 "content": "%s"
@@ -102,10 +115,9 @@ public class ApiV1CommentControllerTest {
     void delete1() throws Exception {
         long postId = 1;
         long commentId = 1;
-        String apiKey = "user1";
 
         ResultActions resultActions = mvc.perform(delete("/api/v1/posts/%d/comments/%d".formatted(postId, commentId))
-                        .header("Authorization", "Bearer " + apiKey)
+                        .header("Authorization", "Bearer " + authToken)
             )
                 .andDo(print());
 
