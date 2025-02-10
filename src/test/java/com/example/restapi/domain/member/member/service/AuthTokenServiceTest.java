@@ -1,8 +1,6 @@
-package com.example.restapi;
+package com.example.restapi.domain.member.member.service;
 
 import com.example.restapi.domain.member.member.entity.Member;
-import com.example.restapi.domain.member.member.service.AuthTokenService;
-import com.example.restapi.domain.member.member.service.MemberService;
 import com.example.restapi.standard.util.Utils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

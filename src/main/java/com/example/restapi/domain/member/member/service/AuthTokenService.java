@@ -2,12 +2,10 @@ package com.example.restapi.domain.member.member.service;
 
 import com.example.restapi.domain.member.member.entity.Member;
 import com.example.restapi.standard.util.Utils;
-import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
 import java.util.Map;
 
 @Service
@@ -19,7 +17,7 @@ public class AuthTokenService {
     @Value("${custom.jwt.expire-seconds}")
     private int expireSeconds;
 
-    public String genAccessToken(Member member) {
+    String genAccessToken(Member member) {
 
         return Utils.Jwt.createToken(
                 keyString,
@@ -28,7 +26,7 @@ public class AuthTokenService {
         );
     }
 
-    public Map<String, Object> getPayload(String token) {
+    Map<String, Object> getPayload(String token) {
         Map<String, Object> payload = Utils.Jwt.getPayload(keyString, token);
         if(payload == null) return null;
 
