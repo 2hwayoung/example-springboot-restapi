@@ -47,13 +47,7 @@ public class AuthTokenServiceTest {
         String jwtStr = Utils.Jwt.createToken(SECRET_KEY, expireSeconds, originPayload);
         assertThat(jwtStr).isNotBlank();
 
-        Jwt<?,?> parsedJwt = Jwts
-                .parser()
-                .verifyWith(SECRET_KEY)
-                .build()
-                .parse(jwtStr);
-
-        Map<String, Object> parsedPayload = (Map<String, Object>) parsedJwt.getPayload();
+        Map<String, Object> parsedPayload = Utils.Jwt.getPayload(SECRET_KEY, jwtStr);
         assertThat(parsedPayload).containsAllEntriesOf(originPayload);
     }
 
@@ -75,6 +69,13 @@ public class AuthTokenServiceTest {
 
         boolean isValidToken = Utils.Jwt.isTokenValid(SECRET_KEY, accessToken);
         assertThat(isValidToken).isTrue();
+
+        Map<String, Object> parsedPayload = authTokenService.getPayload(SECRET_KEY, accessToken);
+
+        assertThat(parsedPayload).containsAllEntriesOf(
+                Map.of("id", member.getId(), "username", member.getUsername())
+        );
+
     }
 
 }
