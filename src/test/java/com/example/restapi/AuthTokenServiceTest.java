@@ -4,18 +4,14 @@ import com.example.restapi.domain.member.member.entity.Member;
 import com.example.restapi.domain.member.member.service.AuthTokenService;
 import com.example.restapi.domain.member.member.service.MemberService;
 import com.example.restapi.standard.util.Utils;
-import io.jsonwebtoken.Jwt;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.crypto.SecretKey;
-import java.security.Key;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,7 +25,10 @@ public class AuthTokenServiceTest {
     @Autowired
     private MemberService memberService;
 
-    private final SecretKey SECRET_KEY = Keys.hmacShaKeyFor("abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890".getBytes());
+    @Value("${custom.jwt.secret-key}")
+    private String keyString;
+    @Value("${custom.jwt.expire-seconds}")
+    private int expireSeconds;
 
     @Test
     @DisplayName("AuthTokenService 생성")
@@ -44,10 +43,10 @@ public class AuthTokenServiceTest {
 
 
         Map<String, Object> originPayload = Map.of("name", "john", "age", 23);
-        String jwtStr = Utils.Jwt.createToken(SECRET_KEY, expireSeconds, originPayload);
+        String jwtStr = Utils.Jwt.createToken(keyString, expireSeconds, originPayload);
         assertThat(jwtStr).isNotBlank();
 
-        Map<String, Object> parsedPayload = Utils.Jwt.getPayload(SECRET_KEY, jwtStr);
+        Map<String, Object> parsedPayload = Utils.Jwt.getPayload(keyString, jwtStr);
         assertThat(parsedPayload).containsAllEntriesOf(originPayload);
     }
 
@@ -67,10 +66,10 @@ public class AuthTokenServiceTest {
         Member member = memberService.findByUsername("user1").get();
         String accessToken = authTokenService.genAccessToken(member);
 
-        boolean isValidToken = Utils.Jwt.isTokenValid(SECRET_KEY, accessToken);
+        boolean isValidToken = Utils.Jwt.isTokenValid(keyString, accessToken);
         assertThat(isValidToken).isTrue();
 
-        Map<String, Object> parsedPayload = authTokenService.getPayload(SECRET_KEY, accessToken);
+        Map<String, Object> parsedPayload = authTokenService.getPayload(accessToken);
 
         assertThat(parsedPayload).containsAllEntriesOf(
                 Map.of("id", member.getId(), "username", member.getUsername())

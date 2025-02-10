@@ -14,6 +14,8 @@ spring:
     username: sa
     password: mysqlpassword
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      auto-commit: false
 
   jpa:
     hibernate:
@@ -33,3 +35,8 @@ logging:
     org.hibernate.orm.jdbc.bind: TRACE
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
+
+custom:
+  jwt:
+    secret-key: abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890
+    expire-seconds: "#{60 * 60 * 24 * 365}"
